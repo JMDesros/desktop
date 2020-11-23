@@ -65,14 +65,16 @@ export function createBackupsManager(
   let backupsDisabled = appState.store.get(StoreKeys.BackupsDisabled);
   let needsBackup = false;
 
-  ensureDirectoryExists(backupsLocation)
-    .then(() =>
-      fs.copyFile(
-        decryptScriptPath,
-        path.join(backupsLocation, path.basename(decryptScriptPath))
+  if (!backupsDisabled) {
+    ensureDirectoryExists(backupsLocation)
+      .then(() =>
+        fs.copyFile(
+          decryptScriptPath,
+          path.join(backupsLocation, path.basename(decryptScriptPath))
+        )
       )
-    )
-    .catch(console.error);
+      .catch(console.error);
+  }
 
   determineLastBackupDate(backupsLocation)
     .then((date) => appState.setBackupCreationDate(date))
@@ -94,6 +96,10 @@ export function createBackupsManager(
       .map((fileName) => path.join(previousLocation, fileName));
 
     await moveFiles(backupFiles, newLocation);
+    await fs.copyFile(
+      decryptScriptPath,
+      path.join(newLocation, path.basename(decryptScriptPath))
+    );
 
     if ((await fs.readdir(previousLocation)).length === 0) {
       await deleteDir(previousLocation);
